@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RouteLine — Carpool Match &amp; Carbon Tracker</title>
+<style>
+  :root{
+    --ink:#14213D;
+    --paper:#EEF1EF;
+    --paper-dim:#E2E6E3;
+    --amber:#E3A008;
+    --teal:#1F7A6C;
+    --coral:#D14D3F;
+    --blue:#2E6E9E;
+    --line:#C7CCC8;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    min-height:100vh;
+  }
+  .wrap{
+    max-width:640px;
+    margin:0 auto;
+    padding:28px 16px 80px;
+  }
+  .eyebrow{
+    font-family:"Consolas","Courier New",monospace;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    font-size:11px;
+    color:var(--teal);
+    margin-bottom:6px;
+    text-align:center;
+  }
+  h1{
+    font-family:"Arial Narrow","Helvetica Neue",sans-serif;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:.02em;
+    font-size:clamp(26px,6vw,40px);
+    margin:0 0 4px;
+    line-height:1;
+    text-align:center;
+  }
+  .sub{
+    text-align:center;
+    color:#4A5568;
+    font-size:14px;
+    margin:8px 0 24px;
+  }
+
+  /* Tabs */
+  .tabs{
+    display:flex;
+    background:#fff;
+    border-radius:10px;
+    padding:4px;
+    box-shadow:0 4px 14px rgba(20,33,61,0.08);
+    margin-bottom:24px;
+    gap:2px;
+  }
+  .tab{
+    flex:1;
+    text-align:center;
+    padding:10px 4px;
+    border-radius:7px;
+    font-size:12px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.03em;
+    cursor:pointer;
+    color:#8A93A6;
+    transition:.15s;
+  }
+  .tab.active{
+    background:var(--ink);
+    color:#fff;
+  }
+  .screen{display:none;}
+  .screen.active{display:block;}
+
+  /* Card */
+  .card{
+    background:#fff;
+    border-radius:14px;
+    box-shadow:0 12px 32px rgba(20,33,61,0.10);
+    padding:26px;
+    margin-bottom:20px;
+  }
+  .card h3{
+    font-family:"Arial Narrow",sans-serif;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    font-size:14px;
+    color:#5C6577;
+    margin:0 0 18px;
+  }
+
+  label{
+    display:block;
+    font-size:12px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:#5C6577;
+    margin-bottom:6px;
+  }
+  input[type="text"], input[type="number"], input[type="time"], select{
+    width:100%;
+    padding:11px 13px;
+    border:2px solid var(--paper-dim);
+    border-radius:8px;
+    font-size:15px;
+    font-family:inherit;
+    background:var(--paper);
+    color:var(--ink);
+  }
+  input:focus, select:focus{ outline:none; border-color:var(--teal); }
+  .field{margin-bottom:16px;}
+  .row{display:flex; gap:12px;}
+  .row .field{flex:1;}
+  .radios{display:flex; gap:10px;}
+  .radio-opt{
+    flex:1;
+    border:2px solid var(--paper-dim);
+    border-radius:8px;
+    padding:12px;
+    text-align:center;
+    cursor:pointer;
+    font-size:13px;
+    font-weight:700;
+  }
+  .radio-opt.selected{
+    border-color:var(--teal);
+    background:rgba(31,122,108,0.08);
+    color:var(--teal);
+  }
+  button{
+    background:var(--ink);
+    color:#fff;
+    border:none;
+    padding:13px 26px;
+    border-radius:8px;
+    font-size:14px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    cursor:pointer;
+    font-family:inherit;
+    width:100%;
+  }
+  button:hover{background:#233258;}
+  .hint{font-size:12px;color:#8A93A6;margin-top:6px;}
+
+  /* Match cards */
+  .match-card{
+    border:2px solid var(--paper-dim);
+    border-radius:10px;
+    padding:16px;
+    margin-bottom:12px;
+  }
+  .match-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:10px;
+  }
+  .match-name{font-size:16px; font-weight:800;}
+  .match-score{
+    font-family:"Consolas","Courier New",monospace;
+    font-weight:800;
+    font-size:15px;
+    padding:4px 10px;
+    border-radius:20px;
+    color:#fff;
+  }
+  .badges{display:flex; flex-wrap:wrap; gap:6px; font-size:12px; color:#4A5568;}
+  .badge{
+    background:var(--paper);
+    padding:4px 9px;
+    border-radius:20px;
+  }
+
+  /* mini map */
+  svg.map{width:100%; height:auto; display:block; margin-top:14px;}
+
+  .headline{text-align:center; margin-bottom:20px;}
+  .headline .big{
+    font-family:"Consolas","Courier New",monospace;
+    font-size:clamp(30px,7vw,44px);
+    font-weight:700;
+    color:var(--teal);
+    line-height:1;
+  }
+  .headline .label{
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:.1em;
+    color:#5C6577;
+    margin-top:6px;
+  }
+
+  .stat-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr 1fr;
+    gap:10px;
+  }
+  .stat{
+    background:var(--paper);
+    border-radius:10px;
+    padding:14px 10px;
+    text-align:center;
+  }
+  .stat .n{font-family:"Consolas","Courier New",monospace; font-size:18px; font-weight:700;}
+  .stat .t{font-size:10px; text-transform:uppercase; letter-spacing:.04em; color:#5C6577; margin-top:2px;}
+
+  .bar-row{display:flex; align-items:center; gap:10px; margin-bottom:10px; font-size:13px;}
+  .bar-row .b-label{width:96px; font-weight:700; flex-shrink:0;}
+  .bar-track{flex:1; background:var(--paper); border-radius:6px; height:14px; overflow:hidden;}
+  .bar-fill{height:100%; border-radius:6px;}
+  .bar-row .b-val{width:48px; text-align:right; font-family:"Consolas",monospace; font-size:12px; color:#5C6577;}
+
+  .leaderboard-row{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:10px 0;
+    border-bottom:1px solid var(--paper-dim);
+  }
+  .leaderboard-row:last-child{border-bottom:none;}
+  .lb-rank{
+    font-family:"Consolas",monospace;
+    font-weight:800;
+    color:var(--teal);
+    width:20px;
+  }
+  .lb-name{flex:1; font-weight:700; font-size:14px;}
+  .lb-val{font-family:"Consolas",monospace; font-size:13px; color:#5C6577;}
+
+  .empty{
+    text-align:center;
+    color:#8A93A6;
+    font-size:13px;
+    padding:20px 0;
+  }
+
+  footer{margin-top:20px; font-size:11px; color:#8A93A6; text-align:center;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="eyebrow">RouteLine · Student Carpool Matching</div>
+  <h1>Find your carpool. Track your impact.</h1>
+  <p class="sub">RouteLine matches students with overlapping commutes and calculates the CO₂ every shared ride avoids.</p>
+
+  <div class="tabs">
+    <div class="tab active" data-screen="profile">Profile</div>
+    <div class="tab" data-screen="matches">Matches</div>
+    <div class="tab" data-screen="impact">My Impact</div>
+    <div class="tab" data-screen="school">School</div>
+  </div>
+
+  <!-- PROFILE -->
+  <div class="screen active" id="screen-profile">
+    <div class="card">
+      <h3>Your transportation profile</h3>
+      <div class="field">
+        <label for="pName">Your name</label>
+        <input type="text" id="pName" placeholder="e.g. Jordan Lee">
+      </div>
+      <div class="row">
+        <div class="field">
+          <label for="pDist">Distance from school (miles)</label>
+          <input type="number" id="pDist" placeholder="e.g. 4.5" min="0.1" step="0.1">
+        </div>
+        <div class="field">
+          <label for="pDir">General direction from school</label>
+          <select id="pDir">
+            <option value="0">North</option>
+            <option value="45">Northeast</option>
+            <option value="90">East</option>
+            <option value="135">Southeast</option>
+            <option value="180">South</option>
+            <option value="225">Southwest</option>
+            <option value="270">West</option>
+            <option value="315">Northwest</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label for="pTime">Arrival time at school</label>
+          <input type="time" id="pTime" value="07:40">
+        </div>
+        <div class="field">
+          <label for="pTrips">School days per week</label>
+          <input type="number" id="pTrips" value="5" min="1" max="7" step="1">
+        </div>
+      </div>
+      <div class="field">
+        <label>Are you offering a ride, or looking for one?</label>
+        <div class="radios">
+          <div class="radio-opt selected" data-role="offer">🚗 I can offer rides</div>
+          <div class="radio-opt" data-role="need">🙋 I need a ride</div>
+        </div>
+      </div>
+      <button onclick="saveProfile()">Save profile</button>
+      <p class="hint" id="profileHint">We use distance + direction instead of a home address, so no exact location is stored.</p>
+    </div>
+  </div>
+
+  <!-- MATCHES -->
+  <div class="screen" id="screen-matches">
+    <div class="card">
+      <h3>Potential carpool matches</h3>
+      <div id="matchList"><div class="empty">Save your profile first, then find matches.</div></div>
+      <button onclick="findMatches()" style="margin-top:10px;">Find my matches</button>
+    </div>
+  </div>
+
+  <!-- IMPACT -->
+  <div class="screen" id="screen-impact">
+    <div class="card">
+      <div class="headline">
+        <div class="big" id="myCo2Year">—</div>
+        <div class="label">lb CO₂ avoided this year by carpooling vs. driving alone</div>
+      </div>
+      <div class="stat-grid">
+        <div class="stat"><div class="n" id="myTripsWeek">—</div><div class="t">Shared trips / week</div></div>
+        <div class="stat"><div class="n" id="myMilesShared">—</div><div class="t">Miles shared / week</div></div>
+        <div class="stat"><div class="n" id="myTrees">—</div><div class="t">Tree-years equiv.</div></div>
+      </div>
+      <p class="hint" style="margin-top:14px;">Estimate assumes your best match carpools with you on school days, splitting emissions for a 2-person ride. Save a profile and find matches to see your numbers.</p>
+    </div>
+  </div>
+
+  <!-- SCHOOL -->
+  <div class="screen" id="screen-school">
+    <div class="card">
+      <h3>Meridian High · Community Impact</h3>
+      <div class="stat-grid">
+        <div class="stat"><div class="n">312</div><div class="t">Students on RouteLine</div></div>
+        <div class="stat"><div class="n">1,146</div><div class="t">Carpool trips this semester</div></div>
+        <div class="stat"><div class="n">2,180 lb</div><div class="t">CO₂ avoided</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>How students get to school</h3>
+      <div id="modeBars"></div>
+    </div>
+    <div class="card">
+      <h3>🌱 Most CO₂ avoided</h3>
+      <div id="leaderCo2"></div>
+    </div>
+    <div class="card">
+      <h3>🤝 Most carpool matches</h3>
+      <div id="leaderMatches"></div>
+    </div>
+  </div>
+
+  <footer>
+    Demo uses sample student data to illustrate the matching algorithm and community dashboard. Emission estimates: drive alone ≈ 0.89 lb CO₂/mi, carpool (2) ≈ 0.445 lb CO₂/mi — based on typical EPA passenger-vehicle averages.
+  </footer>
+</div>
+
+<script>
+/* ---------- Tab navigation ---------- */
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('screen-' + tab.dataset.screen).classList.add('active');
+    if(tab.dataset.screen === 'school') renderSchoolDashboard();
+  });
+});
+
+document.querySelectorAll('.radio-opt').forEach(opt => {
+  opt.addEventListener('click', () => {
+    document.querySelectorAll('.radio-opt').forEach(o => o.classList.remove('selected'));
+    opt.classList.add('selected');
+  });
+});
+
+/* ---------- Sample student dataset ---------- */
+/* Each student's home is stored as (x, y) miles from school, where
+   school = (0,0). x = east(+)/west(-), y = north(+)/south(-).
+   This is a flat-plane approximation, accurate enough at city scale. */
+const SAMPLE_STUDENTS = [
+  { name: "Alex Rivera",   x: 2.1,  y: 3.4,  time: "07:35", offersRide: true  },
+  { name: "Jordan Kim",    x: 2.8,  y: 3.0,  time: "07:45", offersRide: false },
+  { name: "Maya Chen",     x: -3.5, y: 1.2,  time: "07:30", offersRide: true  },
+  { name: "Sam Osei",      x: -3.0, y: 1.8,  time: "07:38", offersRide: false },
+  { name: "Priya Nair",    x: 0.5,  y: -4.0, time: "07:50", offersRide: true  },
+  { name: "Diego Alvarez", x: 4.2,  y: -1.0, time: "07:42", offersRide: false },
+  { name: "Emma Ward",     x: 1.9,  y: 3.6,  time: "07:55", offersRide: false },
+  { name: "Noah Patel",    x: -1.2, y: -3.2, time: "07:33", offersRide: true  },
+];
+
+let currentUser = null;
+let currentMatches = [];
+
+/* Convert (distance, direction-degrees) to (x, y) miles from school */
+function polarToXY(distance, degrees){
+  const rad = degrees * Math.PI / 180;
+  // 0deg = North = +y, 90deg = East = +x
+  const x = distance * Math.sin(rad);
+  const y = distance * Math.cos(rad);
+  return { x, y };
+}
+
+function dist(a, b){
+  return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2));
+}
+
+function timeToMinutes(t){
+  const [h, m] = t.split(':').map(Number);
+  return h * 60 + m;
+}
+
+/* ---------- Profile ---------- */
+function saveProfile(){
+  const name = document.getElementById('pName').value.trim();
+  const distance = parseFloat(document.getElementById('pDist').value);
+  const direction = parseFloat(document.getElementById('pDir').value);
+  const time = document.getElementById('pTime').value;
+  const trips = parseInt(document.getElementById('pTrips').value) || 5;
+  const role = document.querySelector('.radio-opt.selected').dataset.role;
+
+  if(!name || !distance || distance <= 0){
+    alert("Enter your name and a distance greater than 0.");
+    return;
+  }
+
+  const { x, y } = polarToXY(distance, direction);
+  currentUser = { name, x, y, distance, time, trips, offersRide: role === 'offer' };
+
+  document.getElementById('profileHint').textContent =
+    `Saved. School = (0,0), you're about ${distance.toFixed(1)} mi away. Head to the Matches tab.`;
+}
+
+/* ---------- Matching algorithm ---------- */
+/* Score = detour score (50 pts) + schedule score (30 pts) + role fit (20 pts)
+   Detour = extra miles the driver would need to travel to add this passenger's
+   home to the route (triangle: user->candidate + candidate->school - user->school). */
+function computeMatch(user, candidate){
+  const school = { x: 0, y: 0 };
+  const directToSchool = dist(user, school);
+  const viaCandidate = dist(user, candidate) + dist(candidate, school);
+  const detourMiles = Math.max(viaCandidate - directToSchool, 0);
+
+  const detourScore = Math.max(0, 50 - detourMiles * 12);
+
+  const timeDiff = Math.abs(timeToMinutes(user.time) - timeToMinutes(candidate.time));
+  const scheduleScore = Math.max(0, 30 - timeDiff * 1.2);
+
+  let roleScore = 5;
+  if(user.offersRide !== candidate.offersRide) roleScore = 20;
+
+  const total = Math.round(detourScore + scheduleScore + roleScore);
+  return { total: Math.min(total, 100), detourMiles, timeDiff };
+}
+
+function scoreColor(score){
+  if(score >= 80) return 'var(--teal)';
+  if(score >= 55) return 'var(--amber)';
+  return 'var(--coral)';
+}
+
+function findMatches(){
+  if(!currentUser){
+    alert("Save your profile first (Profile tab).");
+    return;
+  }
+  currentMatches = SAMPLE_STUDENTS.map(s => ({ ...s, match: computeMatch(currentUser, s) }))
+    .sort((a, b) => b.match.total - a.match.total)
+    .slice(0, 4);
+
+  const listEl = document.getElementById('matchList');
+  listEl.innerHTML = currentMatches.map(m => `
+    <div class="match-card">
+      <div class="match-top">
+        <div class="match-name">${m.name}</div>
+        <div class="match-score" style="background:${scoreColor(m.match.total)}">${m.match.total}% match</div>
+      </div>
+      <div class="badges">
+        <span class="badge">📍 Adds ${m.match.detourMiles.toFixed(1)} mi to route</span>
+        <span class="badge">🕐 ${m.match.timeDiff} min apart</span>
+        <span class="badge">${m.offersRide ? '🚗 Offers rides' : '🙋 Needs a ride'}</span>
+      </div>
+    </div>
+  `).join('');
+
+  renderMap();
+  updateImpact();
+}
+
+function renderMap(){
+  if(!currentUser || currentMatches.length === 0) return;
+  const best = currentMatches[0];
+  const points = [currentUser, best, { x: 0, y: 0, name: "School" }];
+  const maxExtent = Math.max(...points.map(p => Math.max(Math.abs(p.x), Math.abs(p.y)))) + 1;
+  const scale = v => 140 + (v / maxExtent) * 120; // maps miles to 20-260 px range
+
+  const svg = `
+    <svg class="map" viewBox="0 0 280 280" xmlns="http://www.w3.org/2000/svg">
+      <line x1="${scale(currentUser.x)}" y1="${280-scale(currentUser.y)}" x2="${scale(best.x)}" y2="${280-scale(best.y)}" stroke="var(--teal)" stroke-width="2" stroke-dasharray="5,4"/>
+      <line x1="${scale(best.x)}" y1="${280-scale(best.y)}" x2="140" y2="140" stroke="var(--teal)" stroke-width="2" stroke-dasharray="5,4"/>
+      <circle cx="140" cy="140" r="9" fill="var(--ink)"/>
+      <text x="140" y="128" font-size="10" text-anchor="middle" fill="var(--ink)" font-family="monospace">SCHOOL</text>
+      <circle cx="${scale(currentUser.x)}" cy="${280-scale(currentUser.y)}" r="8" fill="var(--coral)"/>
+      <text x="${scale(currentUser.x)}" y="${280-scale(currentUser.y)-12}" font-size="10" text-anchor="middle" fill="var(--coral)" font-family="monospace">YOU</text>
+      <circle cx="${scale(best.x)}" cy="${280-scale(best.y)}" r="8" fill="var(--teal)"/>
+      <text x="${scale(best.x)}" y="${280-scale(best.y)-12}" font-size="10" text-anchor="middle" fill="var(--teal)" font-family="monospace">${best.name.split(' ')[0].toUpperCase()}</text>
+    </svg>
+  `;
+  document.getElementById('matchList').insertAdjacentHTML('beforeend', svg);
+}
+
+/* ---------- Personal impact ---------- */
+function updateImpact(){
+  if(!currentUser || currentMatches.length === 0) return;
+  const DRIVE_LB_PER_MILE = 0.89;
+  const CARPOOL_LB_PER_MILE = 0.89 / 2;
+  const roundTrip = currentUser.distance * 2;
+  const savedPerTrip = (DRIVE_LB_PER_MILE - CARPOOL_LB_PER_MILE) * roundTrip;
+  const weeks = 36;
+  const savedPerYear = savedPerTrip * currentUser.trips * weeks;
+
+  document.getElementById('myCo2Year').textContent = Math.round(savedPerYear).toLocaleString();
+  document.getElementById('myTripsWeek').textContent = currentUser.trips;
+  document.getElementById('myMilesShared').textContent = (roundTrip * currentUser.trips).toFixed(1);
+  document.getElementById('myTrees').textContent = (savedPerYear / 48).toFixed(1);
+}
+
+/* ---------- School dashboard (sample/mock aggregate data) ---------- */
+const MODE_SPLIT = [
+  { label: "Drive alone", pct: 46, color: "var(--coral)" },
+  { label: "Carpool",     pct: 24, color: "var(--amber)" },
+  { label: "Bus",         pct: 21, color: "var(--teal)"  },
+  { label: "Walk/bike",   pct: 9,  color: "var(--blue)"  },
+];
+const LEADERBOARD_CO2 = [
+  { name: "Maya Chen", val: "412 lb" }, { name: "Noah Patel", val: "388 lb" },
+  { name: "Priya Nair", val: "355 lb" }, { name: "Alex Rivera", val: "301 lb" },
+];
+const LEADERBOARD_MATCHES = [
+  { name: "Diego Alvarez", val: "19 matches" }, { name: "Sam Osei", val: "17 matches" },
+  { name: "Jordan Kim", val: "15 matches" }, { name: "Emma Ward", val: "12 matches" },
+];
+
+function renderSchoolDashboard(){
+  document.getElementById('modeBars').innerHTML = MODE_SPLIT.map(m => `
+    <div class="bar-row">
+      <div class="b-label">${m.label}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${m.pct}%; background:${m.color}"></div></div>
+      <div class="b-val">${m.pct}%</div>
+    </div>
+  `).join('');
+
+  document.getElementById('leaderCo2').innerHTML = LEADERBOARD_CO2.map((s, i) => `
+    <div class="leaderboard-row">
+      <div class="lb-rank">#${i+1}</div>
+      <div class="lb-name">${s.name}</div>
+      <div class="lb-val">${s.val}</div>
+    </div>
+  `).join('');
+
+  document.getElementById('leaderMatches').innerHTML = LEADERBOARD_MATCHES.map((s, i) => `
+    <div class="leaderboard-row">
+      <div class="lb-rank">#${i+1}</div>
+      <div class="lb-name">${s.name}</div>
+      <div class="lb-val">${s.val}</div>
+    </div>
+  `).join('');
+}
+</script>
+</body>
+</html>
