@@ -157,6 +157,47 @@
   button:hover{background:#233258;}
   .hint{font-size:12px;color:#8A93A6;margin-top:6px;}
 
+  /* Hero match card (best match, with visible algorithm breakdown) */
+  .hero-match{
+    border:2px solid var(--teal);
+    border-radius:12px;
+    padding:20px;
+    margin-bottom:18px;
+    background:linear-gradient(180deg, rgba(31,122,108,0.06), rgba(31,122,108,0));
+  }
+  .hero-match .eyebrow-sm{
+    font-family:"Consolas","Courier New",monospace;
+    font-size:10px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--teal);
+    margin-bottom:8px;
+  }
+  .hero-score{
+    font-family:"Consolas","Courier New",monospace;
+    font-weight:800;
+    font-size:34px;
+    line-height:1;
+  }
+  .hero-name{font-size:18px; font-weight:800; margin-top:2px;}
+  .breakdown{margin-top:16px;}
+  .breakdown-row{margin-bottom:10px;}
+  .breakdown-label{
+    display:flex;
+    justify-content:space-between;
+    font-size:12px;
+    font-weight:700;
+    color:#5C6577;
+    margin-bottom:4px;
+  }
+  .breakdown-track{
+    background:var(--paper);
+    border-radius:6px;
+    height:9px;
+    overflow:hidden;
+  }
+  .breakdown-fill{height:100%; border-radius:6px; background:var(--teal);}
+
   /* Match cards */
   .match-card{
     border:2px solid var(--paper-dim);
@@ -319,6 +360,7 @@
   <div class="screen" id="screen-matches">
     <div class="card">
       <h3>Potential carpool matches</h3>
+      <div id="heroMatch"></div>
       <div id="matchList"><div class="empty">Save your profile first, then find matches.</div></div>
       <button onclick="findMatches()" style="margin-top:10px;">Find my matches</button>
     </div>
@@ -334,7 +376,7 @@
       <div class="stat-grid">
         <div class="stat"><div class="n" id="myTripsWeek">—</div><div class="t">Shared trips / week</div></div>
         <div class="stat"><div class="n" id="myMilesShared">—</div><div class="t">Miles shared / week</div></div>
-        <div class="stat"><div class="n" id="myTrees">—</div><div class="t">Tree-years equiv.</div></div>
+        <div class="stat"><div class="n" id="myTrees">—</div><div class="t">Miles of driving avoided</div></div>
       </div>
       <p class="hint" style="margin-top:14px;">Estimate assumes your best match carpools with you on school days, splitting emissions for a 2-person ride. Save a profile and find matches to see your numbers.</p>
     </div>
@@ -343,7 +385,7 @@
   <!-- SCHOOL -->
   <div class="screen" id="screen-school">
     <div class="card">
-      <h3>Meridian High · Community Impact</h3>
+      <h3>Your School · Community Impact (demo data)</h3>
       <div class="stat-grid">
         <div class="stat"><div class="n">312</div><div class="t">Students on RouteLine</div></div>
         <div class="stat"><div class="n">1,146</div><div class="t">Carpool trips this semester</div></div>
@@ -464,7 +506,15 @@ function computeMatch(user, candidate){
   if(user.offersRide !== candidate.offersRide) roleScore = 20;
 
   const total = Math.round(detourScore + scheduleScore + roleScore);
-  return { total: Math.min(total, 100), detourMiles, timeDiff };
+  return {
+    total: Math.min(total, 100),
+    detourMiles,
+    timeDiff,
+    // Each broken out as a % of its own max, so the UI can show *why* the score is what it is
+    routePct: Math.round((detourScore / 50) * 100),
+    schedulePct: Math.round((scheduleScore / 30) * 100),
+    rolePct: Math.round((roleScore / 20) * 100)
+  };
 }
 
 function scoreColor(score){
@@ -482,8 +532,39 @@ function findMatches(){
     .sort((a, b) => b.match.total - a.match.total)
     .slice(0, 4);
 
+  const best = currentMatches[0];
+  const rest = currentMatches.slice(1);
+
+  // Hero card: your top match, with the algorithm's reasoning visible
+  document.getElementById('heroMatch').innerHTML = `
+    <div class="hero-match">
+      <div class="eyebrow-sm">Your best match</div>
+      <div class="hero-score" style="color:${scoreColor(best.match.total)}">${best.match.total}%</div>
+      <div class="hero-name">${best.name}</div>
+      <div class="badges" style="margin-top:8px;">
+        <span class="badge">📍 Adds ${best.match.detourMiles.toFixed(1)} mi to route</span>
+        <span class="badge">🕐 ${best.match.timeDiff} min apart</span>
+        <span class="badge">${best.offersRide ? '🚗 Offers rides' : '🙋 Needs a ride'}</span>
+      </div>
+      <div class="breakdown">
+        <div class="breakdown-row">
+          <div class="breakdown-label"><span>Route compatibility</span><span>${best.match.routePct}%</span></div>
+          <div class="breakdown-track"><div class="breakdown-fill" style="width:${best.match.routePct}%"></div></div>
+        </div>
+        <div class="breakdown-row">
+          <div class="breakdown-label"><span>Schedule compatibility</span><span>${best.match.schedulePct}%</span></div>
+          <div class="breakdown-track"><div class="breakdown-fill" style="width:${best.match.schedulePct}%"></div></div>
+        </div>
+        <div class="breakdown-row">
+          <div class="breakdown-label"><span>Ride compatibility</span><span>${best.match.rolePct}%</span></div>
+          <div class="breakdown-track"><div class="breakdown-fill" style="width:${best.match.rolePct}%"></div></div>
+        </div>
+      </div>
+    </div>
+  `;
+
   const listEl = document.getElementById('matchList');
-  listEl.innerHTML = currentMatches.map(m => `
+  listEl.innerHTML = rest.map(m => `
     <div class="match-card">
       <div class="match-top">
         <div class="match-name">${m.name}</div>
@@ -536,7 +617,10 @@ function updateImpact(){
   document.getElementById('myCo2Year').textContent = Math.round(savedPerYear).toLocaleString();
   document.getElementById('myTripsWeek').textContent = currentUser.trips;
   document.getElementById('myMilesShared').textContent = (roundTrip * currentUser.trips).toFixed(1);
-  document.getElementById('myTrees').textContent = (savedPerYear / 48).toFixed(1);
+  // Miles avoided = the portion of driving replaced by carpooling, derived straight from
+  // the same CO2 numbers above (savedPerYear lb ÷ lb per solo mile) — directly defensible,
+  // unlike a tree-absorption conversion which needs its own separate source.
+  document.getElementById('myTrees').textContent = Math.round(savedPerYear / DRIVE_LB_PER_MILE).toLocaleString();
 }
 
 /* ---------- School dashboard (sample/mock aggregate data) ---------- */
